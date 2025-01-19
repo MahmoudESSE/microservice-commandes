@@ -51,7 +51,7 @@ public class OrderController implements HealthIndicator {
     List<Order> orders = orderDao.findByCreatedDateAfter(startDateTime);
 
     log.info("Actuator: Orders");
-    orders.forEach(System.out::println);
+    orders.forEach(order -> log.info(order.toString()));
 
     if (orders.isEmpty()) {
       log.warn("Actuator: OrderController.getOrders() - No orders found");
