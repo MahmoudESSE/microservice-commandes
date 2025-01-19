@@ -7,14 +7,13 @@ import github.mahmoudesse.microservicecommandes.web.exceptions.OrderNotFoundExce
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
-import java.util.Calendar;
 import java.util.List;
 
 @RestController
+@RequestMapping("orders")
 public class OrderController implements HealthIndicator {
   @Autowired
   OrderDao orderDao;
@@ -22,18 +21,15 @@ public class OrderController implements HealthIndicator {
   @Autowired
   ApplicationPropertiesConfiguration applicationPropertiesConfiguration;
 
-  @GetMapping(value = "/Orders")
+  @GetMapping(value = "/getAll")
   public List<Order> getOrders() {
     System.out.println("*** *** Actuator: OrderController.getOrders()");
 
-    // Fetch the number of days to subtract from application properties
     int lastOrderDate = applicationPropertiesConfiguration.getLastOrder();
 
-    // Calculate the LocalDateTime for the start date
     LocalDateTime startDateTime = LocalDateTime.now().minusDays(lastOrderDate);
     System.out.println("*** *** Actuator: startDateTime: " + startDateTime);
 
-    // Fetch orders from the repository
     List<Order> orders = orderDao.findByCreatedDateAfter(startDateTime);
 
     System.out.println("*** *** Actuator: Orders");
@@ -44,6 +40,52 @@ public class OrderController implements HealthIndicator {
     }
 
     return orders;
+  }
+
+  @GetMapping(value = "/getById/{id}")
+  public Order getOrder(@PathVariable int id) {
+    System.out.println("*** *** Actuator: OrderController.getOrder()");
+    System.out.println("*** *** Actuator: id: " + id);
+
+    Order order = orderDao.findById(id).orElseThrow(() -> new OrderNotFoundException("Order not found"));
+
+    System.out.println("*** *** Actuator: order: " + order);
+
+    return order;
+  }
+
+  @PostMapping("/create")
+  public Order createOrder(@RequestBody Order order) {
+
+    System.out.println("*** *** Actuator: OrderController.createOrder()");
+    System.out.println("*** *** Actuator: order: " + order);
+
+    order.setCreatedDate(LocalDateTime.now());
+    Order savedOrder = orderDao.save(order);
+
+    System.out.println("*** *** Actuator: savedOrder: " + savedOrder);
+
+    return savedOrder;
+  }
+
+  @PutMapping("/update")
+  public Order updateOrder(@RequestBody Order order) {
+    System.out.println("*** *** Actuator: OrderController.updateOrder()");
+    System.out.println("*** *** Actuator: order: " + order);
+
+    Order savedOrder = orderDao.save(order);
+
+    System.out.println("*** *** Actuator: savedOrder: " + savedOrder);
+
+    return savedOrder;
+  }
+
+  @DeleteMapping("/delteById/{id}")
+  public void deleteOrder(@PathVariable int id) {
+    System.out.println("*** *** Actuator: OrderController.deleteOrder()");
+    System.out.println("*** *** Actuator: id: " + id);
+
+    orderDao.deleteById(id);
   }
 
   @Override
