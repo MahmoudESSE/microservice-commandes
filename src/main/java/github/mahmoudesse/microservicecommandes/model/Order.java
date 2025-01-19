@@ -24,4 +24,6 @@ public class Order {
   @Column(name = "created_date")
   private LocalDateTime createdDate;
   private float price;
+  @Column(name = "product_id")
+  private int productId;
 }

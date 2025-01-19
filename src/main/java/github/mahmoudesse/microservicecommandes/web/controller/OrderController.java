@@ -1,5 +1,7 @@
 package github.mahmoudesse.microservicecommandes.web.controller;
 
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
 import github.mahmoudesse.microservicecommandes.config.ApplicationPropertiesConfiguration;
 import github.mahmoudesse.microservicecommandes.dao.OrderDao;
 import github.mahmoudesse.microservicecommandes.model.Order;
@@ -9,12 +11,19 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.cloud.client.circuitbreaker.EnableCircuitBreaker;
+import org.springframework.cloud.netflix.hystrix.dashboard.EnableHystrixDashboard;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
+@EnableCircuitBreaker
+@EnableHystrixDashboard
+@Configuration
 @RequestMapping("orders")
 public class OrderController implements HealthIndicator {
 
@@ -27,9 +36,13 @@ public class OrderController implements HealthIndicator {
   ApplicationPropertiesConfiguration applicationPropertiesConfiguration;
 
   @GetMapping(value = "/getAll")
-  public List<Order> getOrders() {
+  @HystrixCommand(fallbackMethod = "getOrdersFallback", commandProperties = {
+      @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "1000")
+  }, threadPoolKey = "orderThreadPool")
+  public List<Order> getOrders() throws InterruptedException {
     log.info("Actuator: OrderController.getOrders()");
 
+//    Thread.sleep(4000);
     int lastOrderDate = applicationPropertiesConfiguration.getLastOrder();
 
     LocalDateTime startDateTime = LocalDateTime.now().minusDays(lastOrderDate);
@@ -92,6 +105,13 @@ public class OrderController implements HealthIndicator {
     log.info("Actuator: id: " + id);
 
     orderDao.deleteById(id);
+  }
+
+  public List<Order> getOrdersFallback() {
+    log.warn("Actuator: OrderController.getOrdersFallback()");
+    log.warn("Actuator: OrderController.getOrdersFallback() - Returning empty list");
+
+    return new ArrayList<>();
   }
 
   @Override

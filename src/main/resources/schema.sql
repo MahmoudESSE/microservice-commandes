@@ -5,5 +5,6 @@ create table orders
     description  varchar(255) not null,
     quantity     int          not null,
     created_date timestamp    not null,
-    price        float        not null
+    price        float        not null,
+    product_id   int          not null
 );
